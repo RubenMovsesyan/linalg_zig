@@ -217,13 +217,27 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             return Matrix(T, cols, rows).init(data);
         }
 
+        fn is_matrix_pointer(comptime PtrType: type) bool {
+            const ptr_type_info = @typeInfo(PtrType);
+
+            if (ptr_type_info != .pointer) {
+                return false;
+            }
+
+            const child_type = ptr_type_info.pointer.child;
+
+            return @hasField(child_type, "data") and @hasDecl(child_type, "rows") and @hasDecl(child_type, "cols");
+        }
+
         // Vector operations
         pub fn dot(self: *const Self, other: anytype) T {
-            const OtherMat = @TypeOf(other.*);
+            const OtherMatType = @TypeOf(other);
 
-            if (!@hasDecl(OtherMat, "rows") or !@hasDecl(OtherMat, "cols")) {
-                @compileError("Invalid type for dot product");
+            if (comptime !is_matrix_pointer(OtherMatType)) {
+                @compileError("Expected a pointer to a Matrix struct, got " ++ @typeName(OtherMatType));
             }
+
+            const OtherMat = @TypeOf(other.*);
 
             if (comptime rows != 1 and OtherMat.rows != 1) {
                 @compileError("Dot product is only defined for vectors");
@@ -242,11 +256,13 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         }
 
         pub fn cross(self: *const Self, other: anytype) Vector(T, cols) {
-            const OtherMat = @TypeOf(other.*);
+            const OtherMatType = @TypeOf(other);
 
-            if (!@hasDecl(OtherMat, "rows") or !@hasDecl(OtherMat, "cols")) {
-                @compileError("Invalid type for cross product");
+            if (comptime !is_matrix_pointer(OtherMatType)) {
+                @compileError("Expected a pointer to a Matrix struct, got " ++ @typeName(OtherMatType));
             }
+
+            const OtherMat = @TypeOf(other.*);
 
             if (comptime rows != 1 and OtherMat.rows != 1) {
                 @compileError("Cross product is only defined for vectors");
@@ -376,7 +392,7 @@ test "Vector Dot" {
     const vec_2 = Vec3f.init(.{.{ 1, 2, 3 }});
 
     const output = vec_1.dot(&vec_2);
-    std.debug.print("Output: {f}\n", .{output});
+    std.debug.print("Output: {}\n", .{output});
 
     try std.testing.expect(output == 14);
 }

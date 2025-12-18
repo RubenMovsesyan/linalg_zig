@@ -283,6 +283,39 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
 
             return Vector(T, cols).init(.{.{ x, y, z }});
         }
+
+        pub fn mag(self: *const Self) T {
+            if (comptime rows_ != 1) {
+                @compileError("Magnitude is only defined for vectors");
+            }
+
+            var sum = @as(T, 0);
+            inline for (self.data[0]) |elem| {
+                sum += elem * elem;
+            }
+            sum = std.math.sqrt(sum);
+
+            return sum;
+        }
+
+        pub fn normalized(self: *const Self) Self {
+            if (comptime rows_ != 1) {
+                @compileError("Normalization is only defined for vectors");
+            }
+
+            var sum = @as(T, 0);
+            inline for (self.data[0]) |elem| {
+                sum += elem * elem;
+            }
+            sum = std.math.sqrt(sum);
+
+            var output = Self.init(self.data);
+            inline for (&output.data[0]) |*elem| {
+                elem.* /= sum;
+            }
+
+            return output;
+        }
     };
 }
 
@@ -407,4 +440,18 @@ test "Vector Cross" {
     std.debug.print("Output: {f}\n", .{output});
 
     try std.testing.expect(output.eql(&expected));
+}
+
+test "Vector Normalization" {
+    const ERROR = 1e-6;
+
+    const vec = Vec3f.init(.{.{ 1, 2, 3 }});
+    const normalized = vec.normalized();
+
+    std.debug.print("Input {f}\n", .{vec});
+    std.debug.print("Output {f}\n", .{normalized});
+
+    const mag = normalized.mag();
+    std.debug.print("Magnitude: {}\n", .{mag});
+    try std.testing.expect(mag >= 1.0 - ERROR and mag <= 1.0 + ERROR);
 }

@@ -298,23 +298,31 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             return sum;
         }
 
-        pub fn normalized(self: *const Self) Self {
+        pub fn norm(self: *const Self) Self {
             if (comptime rows_ != 1) {
                 @compileError("Normalization is only defined for vectors");
             }
 
-            var sum = @as(T, 0);
-            inline for (self.data[0]) |elem| {
-                sum += elem * elem;
-            }
-            sum = std.math.sqrt(sum);
+            const magnitude = self.mag();
 
             var output = Self.init(self.data);
             inline for (&output.data[0]) |*elem| {
-                elem.* /= sum;
+                elem.* /= magnitude;
             }
 
             return output;
+        }
+
+        pub fn normalize(self: *Self) void {
+            if (comptime rows_ != 1) {
+                @compileError("Normalization is only defined for vectors");
+            }
+
+            const magnitude = self.mag();
+
+            inline for (&self.data[0]) |*elem| {
+                elem.* /= magnitude;
+            }
         }
     };
 }
@@ -446,12 +454,26 @@ test "Vector Normalization" {
     const ERROR = 1e-6;
 
     const vec = Vec3f.init(.{.{ 1, 2, 3 }});
-    const normalized = vec.normalized();
+    const normalized = vec.norm();
 
     std.debug.print("Input {f}\n", .{vec});
     std.debug.print("Output {f}\n", .{normalized});
 
     const mag = normalized.mag();
+    std.debug.print("Magnitude: {}\n", .{mag});
+    try std.testing.expect(mag >= 1.0 - ERROR and mag <= 1.0 + ERROR);
+}
+
+test "Vector Normalization In Place" {
+    const ERROR = 1e-6;
+
+    var vec = Vec3f.init(.{.{ 1, 2, 3 }});
+
+    std.debug.print("Input {f}\n", .{vec});
+    vec.normalize();
+    std.debug.print("Output {f}\n", .{vec});
+
+    const mag = vec.mag();
     std.debug.print("Magnitude: {}\n", .{mag});
     try std.testing.expect(mag >= 1.0 - ERROR and mag <= 1.0 + ERROR);
 }

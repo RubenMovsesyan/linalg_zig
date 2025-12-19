@@ -296,11 +296,11 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("Cross product is only defined for vectors of dimension 3");
             }
 
-            const x = self.data[0][1] * other.data[0][2] - self.data[0][2] * other.data[0][1];
-            const y = self.data[0][2] * other.data[0][0] - self.data[0][0] * other.data[0][2];
-            const z = self.data[0][0] * other.data[0][1] - self.data[0][1] * other.data[0][0];
+            const _x = self.data[0][1] * other.data[0][2] - self.data[0][2] * other.data[0][1];
+            const _y = self.data[0][2] * other.data[0][0] - self.data[0][0] * other.data[0][2];
+            const _z = self.data[0][0] * other.data[0][1] - self.data[0][1] * other.data[0][0];
 
-            return Vector(T, cols).init(.{.{ x, y, z }});
+            return Vector(T, cols).init(.{.{ _x, _y, _z }});
         }
 
         pub fn mag(self: *const Self) T {
@@ -342,6 +342,55 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             inline for (&self.data[0]) |*elem| {
                 elem.* /= magnitude;
             }
+        }
+
+        // Vector specific accessors
+        pub fn x(self: *const Self) T {
+            if (comptime rows_ != 1) {
+                @compileError("x is only defined for vectors");
+            }
+
+            if (comptime cols_ < 1) {
+                @compileError("x is only defined for vectors of >= 1 dimension");
+            }
+
+            return self.data[0][0];
+        }
+
+        pub fn y(self: *const Self) T {
+            if (comptime rows_ != 1) {
+                @compileError("y is only defined for vectors");
+            }
+
+            if (comptime cols_ < 2) {
+                @compileError("y is only defined for vectors of >= 2 dimensions");
+            }
+
+            return self.data[0][1];
+        }
+
+        pub fn z(self: *const Self) T {
+            if (comptime rows_ != 1) {
+                @compileError("z is only defined for vectors");
+            }
+
+            if (comptime cols_ < 3) {
+                @compileError("z is only defined for vectors of >= 3 dimensions");
+            }
+
+            return self.data[0][2];
+        }
+
+        pub fn w(self: *const Self) T {
+            if (comptime rows_ != 1) {
+                @compileError("w is only defined for vectors");
+            }
+
+            if (comptime cols_ < 4) {
+                @compileError("w is only defined for vectors of >= 4 dimensions");
+            }
+
+            return self.data[0][3];
         }
     };
 }

@@ -206,6 +206,25 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             return Matrix(T, rows, OtherMat.cols).init(data);
         }
 
+        pub fn scalar_mult(self: *const Self, scalar: T) Matrix(T, rows, cols) {
+            var data: [rows][cols]T = self.data;
+            inline for (0..rows) |row| {
+                inline for (0..cols) |col| {
+                    data[row][col] *= scalar;
+                }
+            }
+
+            return Matrix(T, rows, cols).init(data);
+        }
+
+        pub fn scalar_mult_to(self: *Self, scalar: T) void {
+            inline for (0..rows) |row| {
+                inline for (0..cols) |col| {
+                    self.data[row][col] *= scalar;
+                }
+            }
+        }
+
         pub fn transposed(self: *const Self) Matrix(T, cols, rows) {
             var data: [cols][rows]T = undefined;
             inline for (0..rows) |row| {
@@ -476,4 +495,19 @@ test "Vector Normalization In Place" {
     const mag = vec.mag();
     std.debug.print("Magnitude: {}\n", .{mag});
     try std.testing.expect(mag >= 1.0 - ERROR and mag <= 1.0 + ERROR);
+}
+
+test "Scalar Multiplication" {
+    var vec = Vec3f.init(.{.{ 1, 2, 3 }});
+
+    std.debug.print("Input {f}\n", .{vec});
+    const multed = vec.scalar_mult(2);
+    vec.scalar_mult_to(2);
+    std.debug.print("Output {f}\n", .{vec});
+    std.debug.print("Output {f}\n", .{multed});
+
+    const expected = Vec3f.init(.{.{ 2, 4, 6 }});
+
+    try std.testing.expect(multed.eql(&expected));
+    try std.testing.expect(vec.eql(&expected));
 }

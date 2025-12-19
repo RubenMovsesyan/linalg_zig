@@ -188,8 +188,14 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         }
 
         // Matrix operations
-        pub fn mult(self: *const Self, other: *const Self) Matrix(T, rows, @TypeOf(other.*).cols) {
+        pub fn mult(self: *const Self, other: anytype) Matrix(T, rows, @TypeOf(other.*).cols) {
             const OtherMat = @TypeOf(other.*);
+
+            // Ensure other is a Matrix type
+            if (comptime !@hasField(OtherMat, "data") or !@hasDecl(OtherMat, "rows") or !@hasDecl(OtherMat, "cols")) {
+                @compileError("Expected a Matrix type for multiplication");
+            }
+
             if (comptime cols != OtherMat.rows) {
                 @compileError("Matrix Dimensions do not match for muliplication");
             }

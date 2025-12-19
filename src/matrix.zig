@@ -23,7 +23,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
     return struct {
         const Self = @This();
 
-        data: [rows_][cols_]T,
+        data: [rows_ * cols_]T,
 
         pub const rows = rows_;
         pub const cols = cols_;
@@ -37,9 +37,10 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 for (0..cols_) |j| {
                     if (j > 0) try writer.print(", ", .{});
 
+                    const index = i * cols + j;
                     switch (@typeInfo(T)) {
-                        .int, .comptime_int => try writer.print("{}", .{self.data[i][j]}),
-                        .float, .comptime_float => try writer.print("{d:.3}", .{self.data[i][j]}),
+                        .int, .comptime_int => try writer.print("{}", .{self.data[index]}),
+                        .float, .comptime_float => try writer.print("{d:.3}", .{self.data[index]}),
                         else => @compileError("Matrix type must be numeric"),
                     }
                 }
@@ -58,18 +59,19 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         }
 
         // Initializers
-        pub fn init(data: [rows_][cols_]T) Self {
+        pub fn init(data: [rows_ * cols_]T) Self {
             return Self{ .data = data };
         }
 
         pub fn zero() Self {
-            var data: [rows_][cols_]T = undefined;
+            var data: [rows_ * cols_]T = undefined;
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
+                    const index = i * cols_ + j;
                     if (type_info == .int) {
-                        data[i][j] = @as(T, @intCast(0));
+                        data[index] = @as(T, @intCast(0));
                     } else {
-                        data[i][j] = @as(T, @floatCast(0.0));
+                        data[index] = @as(T, @floatCast(0.0));
                     }
                 }
             }
@@ -82,20 +84,21 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("Cannot create an identity matrix with different row and column counts");
             }
 
-            var data: [rows_][cols_]T = undefined;
+            var data: [rows_ * cols_]T = undefined;
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
+                    const index = i * cols_ + j;
                     if (i == j) {
                         if (type_info == .int) {
-                            data[i][j] = @as(T, @intCast(1));
+                            data[index] = @as(T, @intCast(1));
                         } else {
-                            data[i][j] = @as(T, @floatCast(1.0));
+                            data[index] = @as(T, @floatCast(1.0));
                         }
                     } else {
                         if (type_info == .int) {
-                            data[i][j] = @as(T, @intCast(0));
+                            data[index] = @as(T, @intCast(0));
                         } else {
-                            data[i][j] = @as(T, @floatCast(0.0));
+                            data[index] = @as(T, @floatCast(0.0));
                         }
                     }
                 }
@@ -108,11 +111,12 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
 
         // Element wise operations
         pub fn elem_add(self: *const Self, other: *const Self) Self {
-            var data_out: [rows_][cols_]T = undefined;
+            var data_out: [rows_ * cols_]T = undefined;
 
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
-                    data_out[i][j] = self.data[i][j] + other.data[i][j];
+                    const index = i * cols_ + j;
+                    data_out[index] = self.data[index] + other.data[index];
                 }
             }
 
@@ -122,17 +126,19 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         pub fn elem_add_to(self: *Self, other: *const Self) void {
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
-                    self.data[i][j] += other.data[i][j];
+                    const index = i * cols_ + j;
+                    self.data[index] += other.data[index];
                 }
             }
         }
 
         pub fn elem_sub(self: *const Self, other: *const Self) Self {
-            var data_out: [rows_][cols_]T = undefined;
+            var data_out: [rows_ * cols_]T = undefined;
 
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
-                    data_out[i][j] = self.data[i][j] - other.data[i][j];
+                    const index = i * cols_ + j;
+                    data_out[index] = self.data[index] - other.data[index];
                 }
             }
 
@@ -142,17 +148,19 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         pub fn elem_sub_to(self: *Self, other: *const Self) void {
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
-                    self.data[i][j] -= other.data[i][j];
+                    const index = i * cols_ + j;
+                    self.data[index] -= other.data[index];
                 }
             }
         }
 
         pub fn elem_mul(self: *const Self, other: *const Self) Self {
-            var data_out: [rows_][cols_]T = undefined;
+            var data_out: [rows_ * cols_]T = undefined;
 
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
-                    data_out[i][j] = self.data[i][j] * other.data[i][j];
+                    const index = i * cols_ + j;
+                    data_out[index] = self.data[index] * other.data[index];
                 }
             }
 
@@ -162,17 +170,19 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         pub fn elem_mul_to(self: *Self, other: *const Self) void {
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
-                    self.data[i][j] *= other.data[i][j];
+                    const index = i * cols_ + j;
+                    self.data[index] *= other.data[index];
                 }
             }
         }
 
         pub fn elem_div(self: *const Self, other: *const Self) Self {
-            var data_out: [rows_][cols_]T = undefined;
+            var data_out: [rows_ * cols_]T = undefined;
 
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
-                    data_out[i][j] = self.data[i][j] / other.data[i][j];
+                    const index = i * cols_ + j;
+                    data_out[index] = self.data[index] / other.data[index];
                 }
             }
 
@@ -182,7 +192,8 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         pub fn elem_div_to(self: *Self, other: *const Self) void {
             inline for (0..rows_) |i| {
                 inline for (0..cols_) |j| {
-                    self.data[i][j] /= other.data[i][j];
+                    const index = i * cols_ + j;
+                    self.data[index] /= other.data[index];
                 }
             }
         }
@@ -200,11 +211,14 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("Matrix Dimensions do not match for muliplication");
             }
 
-            var data: [rows][OtherMat.cols]T = undefined;
+            var data: [rows * OtherMat.cols]T = undefined;
             inline for (0..rows) |row| {
                 inline for (0..OtherMat.cols) |col| {
                     inline for (0..cols) |k| {
-                        data[row][col] += self.data[row][k] * other.data[k][col];
+                        const self_index = row * cols + col;
+                        const self_iter_index = row * cols + k;
+                        const other_iter_index = k * OtherMat.cols + col;
+                        data[self_index] += self.data[self_iter_index] * other.data[other_iter_index];
                     }
                 }
             }
@@ -213,10 +227,11 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         }
 
         pub fn scalar_mult(self: *const Self, scalar: T) Matrix(T, rows, cols) {
-            var data: [rows][cols]T = self.data;
+            var data: [rows * cols]T = self.data;
             inline for (0..rows) |row| {
                 inline for (0..cols) |col| {
-                    data[row][col] *= scalar;
+                    const index = row * cols + col;
+                    data[index] *= scalar;
                 }
             }
 
@@ -226,16 +241,19 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         pub fn scalar_mult_to(self: *Self, scalar: T) void {
             inline for (0..rows) |row| {
                 inline for (0..cols) |col| {
-                    self.data[row][col] *= scalar;
+                    const index = row * cols + col;
+                    self.data[index] *= scalar;
                 }
             }
         }
 
         pub fn transposed(self: *const Self) Matrix(T, cols, rows) {
-            var data: [cols][rows]T = undefined;
+            var data: [cols * rows]T = undefined;
             inline for (0..rows) |row| {
                 inline for (0..cols) |col| {
-                    data[row][col] = self.data[col][row];
+                    const index = row * cols + col;
+                    const index_inv = col * cols + row;
+                    data[index] = self.data[index_inv];
                 }
             }
 
@@ -274,7 +292,8 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
 
             var output: T = 0;
             inline for (0..cols) |i| {
-                output += self.data[0][i] * other.data[0][i];
+                const index = i;
+                output += self.data[index] * other.data[index];
             }
 
             return output;
@@ -302,11 +321,11 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("Cross product is only defined for vectors of dimension 3");
             }
 
-            const _x = self.data[0][1] * other.data[0][2] - self.data[0][2] * other.data[0][1];
-            const _y = self.data[0][2] * other.data[0][0] - self.data[0][0] * other.data[0][2];
-            const _z = self.data[0][0] * other.data[0][1] - self.data[0][1] * other.data[0][0];
+            const _x = self.data[1] * other.data[2] - self.data[2] * other.data[1];
+            const _y = self.data[2] * other.data[0] - self.data[0] * other.data[2];
+            const _z = self.data[0] * other.data[1] - self.data[1] * other.data[0];
 
-            return Vector(T, cols).init(.{.{ _x, _y, _z }});
+            return Vector(T, cols).init(.{ _x, _y, _z });
         }
 
         pub fn mag(self: *const Self) T {
@@ -315,7 +334,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             }
 
             var sum = @as(T, 0);
-            inline for (self.data[0]) |elem| {
+            inline for (self.data) |elem| {
                 sum += elem * elem;
             }
             sum = std.math.sqrt(sum);
@@ -331,7 +350,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             const magnitude = self.mag();
 
             var output = Self.init(self.data);
-            inline for (&output.data[0]) |*elem| {
+            inline for (&output.data) |*elem| {
                 elem.* /= magnitude;
             }
 
@@ -345,7 +364,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
 
             const magnitude = self.mag();
 
-            inline for (&self.data[0]) |*elem| {
+            inline for (&self.data) |*elem| {
                 elem.* /= magnitude;
             }
         }
@@ -360,7 +379,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("x is only defined for vectors of >= 1 dimension");
             }
 
-            return self.data[0][0];
+            return self.data[0];
         }
 
         pub fn y(self: *const Self) T {
@@ -372,7 +391,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("y is only defined for vectors of >= 2 dimensions");
             }
 
-            return self.data[0][1];
+            return self.data[1];
         }
 
         pub fn z(self: *const Self) T {
@@ -384,7 +403,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("z is only defined for vectors of >= 3 dimensions");
             }
 
-            return self.data[0][2];
+            return self.data[2];
         }
 
         pub fn w(self: *const Self) T {
@@ -396,7 +415,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("w is only defined for vectors of >= 4 dimensions");
             }
 
-            return self.data[0][3];
+            return self.data[3];
         }
     };
 }
@@ -440,17 +459,17 @@ test "Matrix Creation" {
 test "Matrix Adding" {
     var eye_mat = Mat4f.eye();
     const adding_mat = Mat4f.init(.{
-        .{ 1.0, 2.0, 3.0, 4.0 },
-        .{ 5.0, 6.0, 7.0, 8.0 },
-        .{ 9.0, 10.0, 11.0, 12.0 },
-        .{ 13.0, 14.0, 15.0, 16.0 },
+        1.0,  2.0,  3.0,  4.0,
+        5.0,  6.0,  7.0,  8.0,
+        9.0,  10.0, 11.0, 12.0,
+        13.0, 14.0, 15.0, 16.0,
     });
 
     const expected_mat = Mat4f.init(.{
-        .{ 2.0, 2.0, 3.0, 4.0 },
-        .{ 5.0, 7.0, 7.0, 8.0 },
-        .{ 9.0, 10.0, 12.0, 12.0 },
-        .{ 13.0, 14.0, 15.0, 17.0 },
+        2.0,  2.0,  3.0,  4.0,
+        5.0,  7.0,  7.0,  8.0,
+        9.0,  10.0, 12.0, 12.0,
+        13.0, 14.0, 15.0, 17.0,
     });
 
     const added_mat = eye_mat.elem_add(&adding_mat);
@@ -466,20 +485,20 @@ test "Matrix Adding" {
 
 test "Matrix Multiplication" {
     const mat2_f_a = Mat2f.init(.{
-        .{ 1.0, 2.0 },
-        .{ 3.0, 4.0 },
+        1.0, 2.0,
+        3.0, 4.0,
     });
 
     const mat2_f_b = Mat2f.init(.{
-        .{ 5.0, 6.0 },
-        .{ 7.0, 8.0 },
+        5.0, 6.0,
+        7.0, 8.0,
     });
 
     const output = mat2_f_a.mult(&mat2_f_b);
 
     const expected = Mat2f.init(.{
-        .{ 19.0, 22.0 },
-        .{ 43.0, 50.0 },
+        19.0, 22.0,
+        43.0, 50.0,
     });
 
     try std.testing.expect(output.eql(&expected));
@@ -487,24 +506,24 @@ test "Matrix Multiplication" {
 
 test "Matrix Transpose" {
     const mat2_f_a = Mat2f.init(.{
-        .{ 1.0, 2.0 },
-        .{ 3.0, 4.0 },
+        1.0, 2.0,
+        3.0, 4.0,
     });
 
     const output = mat2_f_a.transposed();
 
     const expected = Mat2f.init(.{
-        .{ 1.0, 3.0 },
-        .{ 2.0, 4.0 },
+        1.0, 3.0,
+        2.0, 4.0,
     });
 
     try std.testing.expect(output.eql(&expected));
 }
 
 test "Vector Dot" {
-    const vec_1 = Vec3f.init(.{.{ 1, 2, 3 }});
+    const vec_1 = Vec3f.init(.{ 1, 2, 3 });
 
-    const vec_2 = Vec3f.init(.{.{ 1, 2, 3 }});
+    const vec_2 = Vec3f.init(.{ 1, 2, 3 });
 
     const output = vec_1.dot(&vec_2);
     std.debug.print("Output: {}\n", .{output});
@@ -513,10 +532,10 @@ test "Vector Dot" {
 }
 
 test "Vector Cross" {
-    const vec_1 = Vec3f.init(.{.{ 1, 2, 3 }});
-    const vec_2 = Vec3f.init(.{.{ 4, 5, 6 }});
+    const vec_1 = Vec3f.init(.{ 1, 2, 3 });
+    const vec_2 = Vec3f.init(.{ 4, 5, 6 });
 
-    const expected = Vec3f.init(.{.{ -3, 6, -3 }});
+    const expected = Vec3f.init(.{ -3, 6, -3 });
 
     const output = vec_1.cross(&vec_2);
     std.debug.print("Output: {f}\n", .{output});
@@ -527,7 +546,7 @@ test "Vector Cross" {
 test "Vector Normalization" {
     const ERROR = 1e-6;
 
-    const vec = Vec3f.init(.{.{ 1, 2, 3 }});
+    const vec = Vec3f.init(.{ 1, 2, 3 });
     const normalized = vec.norm();
 
     std.debug.print("Input {f}\n", .{vec});
@@ -541,7 +560,7 @@ test "Vector Normalization" {
 test "Vector Normalization In Place" {
     const ERROR = 1e-6;
 
-    var vec = Vec3f.init(.{.{ 1, 2, 3 }});
+    var vec = Vec3f.init(.{ 1, 2, 3 });
 
     std.debug.print("Input {f}\n", .{vec});
     vec.normalize();
@@ -553,7 +572,7 @@ test "Vector Normalization In Place" {
 }
 
 test "Scalar Multiplication" {
-    var vec = Vec3f.init(.{.{ 1, 2, 3 }});
+    var vec = Vec3f.init(.{ 1, 2, 3 });
 
     std.debug.print("Input {f}\n", .{vec});
     const multed = vec.scalar_mult(2);
@@ -561,7 +580,7 @@ test "Scalar Multiplication" {
     std.debug.print("Output {f}\n", .{vec});
     std.debug.print("Output {f}\n", .{multed});
 
-    const expected = Vec3f.init(.{.{ 2, 4, 6 }});
+    const expected = Vec3f.init(.{ 2, 4, 6 });
 
     try std.testing.expect(multed.eql(&expected));
     try std.testing.expect(vec.eql(&expected));

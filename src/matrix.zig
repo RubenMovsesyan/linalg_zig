@@ -397,7 +397,12 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("x is only defined for vectors of >= 1 dimension");
             }
 
-            return self.data[0];
+            // If is Quaternion
+            if (comptime Self.isQuaternion()) {
+                return self.data[1];
+            } else {
+                return self.data[0];
+            }
         }
 
         pub fn y(self: *const Self) T {
@@ -409,7 +414,11 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("y is only defined for vectors of >= 2 dimensions");
             }
 
-            return self.data[1];
+            if (comptime Self.isQuaternion()) {
+                return self.data[2];
+            } else {
+                return self.data[1];
+            }
         }
 
         pub fn z(self: *const Self) T {
@@ -421,7 +430,11 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("z is only defined for vectors of >= 3 dimensions");
             }
 
-            return self.data[2];
+            if (comptime Self.isQuaternion()) {
+                return self.data[3];
+            } else {
+                return self.data[2];
+            }
         }
 
         pub fn w(self: *const Self) T {
@@ -433,7 +446,11 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("w is only defined for vectors of >= 4 dimensions");
             }
 
-            return self.data[3];
+            if (comptime Self.isQuaternion()) {
+                return self.data[0];
+            } else {
+                return self.data[3];
+            }
         }
 
         pub fn homogeneous(self: *const Self) Vector(T, 4) {
@@ -444,6 +461,14 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             return Vector(T, 4).init(.{ self.x(), self.y(), self.z(), @as(T, 1) });
         }
 
+        pub fn toQuat(self: *const Self) Vector(T, 4) {
+            if (comptime rows_ != 1 and cols_ != 3) {
+                @compileError("homogeneous is only defined for vectors of 1x3 dimensions");
+            }
+
+            return Vector(T, 4).init(.{ @as(T, 0), self.x(), self.y(), self.z() });
+        }
+
         // Quaternion Operations
 
         pub fn conjugate(self: *const Self) Vector(T, 4) {
@@ -451,7 +476,7 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
                 @compileError("conjugate is only defined for quaternions");
             }
 
-            return Vector(T, 4).init(.{ self.x(), -self.y(), -self.z(), -self.w() });
+            return Vector(T, 4).init(.{ self.w(), -self.x(), -self.y(), -self.z() });
         }
 
         // fn hamilton_prod(a: vec4<f32>, b: vec4<f32>) -> vec4<f32> {
@@ -465,10 +490,10 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
 
         pub fn hamiltonProd(self: *const Self, vector: *const Vector(T, 4)) Vector(T, 4) {
             return Vector(T, 4).init(.{
-                self.x() * vector.y() + self.y() * vector.x() + self.z() * vector.w() - self.w() * vector.z(),
-                self.x() * vector.z() - self.y() * vector.w() + self.z() * vector.x() + self.w() * vector.y(),
-                self.x() * vector.w() + self.y() * vector.z() - self.z() * vector.y() + self.w() * vector.x(),
-                self.x() * vector.x() - self.y() * vector.y() - self.z() * vector.z() - self.w() * vector.w(),
+                self.w() * vector.w() - self.x() * vector.x() - self.y() * vector.y() - self.z() * vector.z(),
+                self.w() * vector.x() + self.x() * vector.w() + self.y() * vector.z() - self.z() * vector.y(),
+                self.w() * vector.y() - self.x() * vector.z() + self.y() * vector.w() + self.z() * vector.x(),
+                self.w() * vector.z() + self.x() * vector.y() - self.y() * vector.x() + self.z() * vector.w(),
             });
         }
 
@@ -479,9 +504,9 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
 
             const conj = self.conjugate();
 
-            const temp = self.hamiltonProd(&vector.homogeneous());
+            const temp = self.hamiltonProd(&vector.toQuat());
             const output = temp.hamiltonProd(&conj);
-            return Vector(T, 3).init(.{ output.data[0], output.data[1], output.data[2] });
+            return Vector(T, 3).init(.{ output.x(), output.y(), output.z() });
         }
     };
 }
@@ -659,6 +684,22 @@ test "Scalar Multiplication" {
 test "isQuaternion" {
     try std.testing.expect(Quatf.isQuaternion() == true);
     try std.testing.expect(Vec3f.isQuaternion() == false);
+}
+
+test "Quat Accessors" {
+    const vec = Vec3f.init(.{ 0.0, 1.0, 2.0 });
+    const quat = Quatf.init(.{ 0.0, 1.0, 2.0, 3.0 });
+
+    std.debug.print("Vec: {} {} {}\n", .{ vec.x(), vec.y(), vec.z() });
+    try std.testing.expect(vec.x() == 0.0);
+    try std.testing.expect(vec.y() == 1.0);
+    try std.testing.expect(vec.z() == 2.0);
+
+    std.debug.print("Quat: {} {} {} {}\n", .{ quat.w(), quat.x(), quat.y(), quat.z() });
+    try std.testing.expect(quat.w() == 0.0);
+    try std.testing.expect(quat.x() == 1.0);
+    try std.testing.expect(quat.y() == 2.0);
+    try std.testing.expect(quat.z() == 3.0);
 }
 
 test "Vector Rotation" {

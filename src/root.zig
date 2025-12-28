@@ -30,3 +30,8 @@ pub const Vec3d = matrix.Vec3d;
 pub const Vec4i = matrix.Vec4i;
 pub const Vec4f = matrix.Vec4f;
 pub const Vec4d = matrix.Vec4d;
+
+// Quaternions
+pub const Quati = matrix.Vec4i;
+pub const Quatf = matrix.Vec4f;
+pub const Quatd = matrix.Vec4d;

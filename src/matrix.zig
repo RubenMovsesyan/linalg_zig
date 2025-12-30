@@ -86,10 +86,17 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         pub fn eye() Self {
             if (comptime Self.isQuaternion()) {
                 var data: [rows_ * cols_]T = undefined;
-                data[0] = @as(T, @intCast(0));
-                data[1] = @as(T, @intCast(0));
-                data[2] = @as(T, @intCast(0));
-                data[3] = @as(T, @intCast(1));
+                if (type_info == .int) {
+                    data[0] = @as(T, @intCast(0));
+                    data[1] = @as(T, @intCast(0));
+                    data[2] = @as(T, @intCast(0));
+                    data[3] = @as(T, @intCast(1));
+                } else {
+                    data[0] = @as(T, @floatCast(0.0));
+                    data[1] = @as(T, @floatCast(0.0));
+                    data[2] = @as(T, @floatCast(0.0));
+                    data[3] = @as(T, @floatCast(1.0));
+                }
                 return Self{ .data = data };
             }
 

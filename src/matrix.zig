@@ -232,6 +232,19 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             }
 
             var data: [rows * OtherMat.cols]T = undefined;
+            // Initialize the data first
+            inline for (0..rows) |row| {
+                inline for (0..OtherMat.cols) |col| {
+                    const index = row * OtherMat.cols + col;
+
+                    if (type_info == .int) {
+                        data[index] = @as(T, @intCast(0));
+                    } else {
+                        data[index] = @as(T, @floatCast(0.0));
+                    }
+                }
+            }
+
             inline for (0..rows) |row| {
                 inline for (0..OtherMat.cols) |col| {
                     inline for (0..cols) |k| {

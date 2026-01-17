@@ -407,6 +407,74 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
             }
         }
 
+        // NOTE: Only implemented for 4x4 matrix
+        pub fn inverse(self: *Self) Self {
+            if (comptime rows_ != 4 or cols_ != 4 or rows_ != cols_) {
+                @compileError("Inverse is only defined for 4x4 square matrices");
+            }
+
+            const m00 = self.data[0 * 4 + 0];
+            const m01 = self.data[0 * 4 + 1];
+            const m02 = self.data[0 * 4 + 2];
+            const m03 = self.data[0 * 4 + 3];
+            const m10 = self.data[1 * 4 + 0];
+            const m11 = self.data[1 * 4 + 1];
+            const m12 = self.data[1 * 4 + 2];
+            const m13 = self.data[1 * 4 + 3];
+            const m20 = self.data[2 * 4 + 0];
+            const m21 = self.data[2 * 4 + 1];
+            const m22 = self.data[2 * 4 + 2];
+            const m23 = self.data[2 * 4 + 3];
+            const m30 = self.data[3 * 4 + 0];
+            const m31 = self.data[3 * 4 + 1];
+            const m32 = self.data[3 * 4 + 2];
+            const m33 = self.data[3 * 4 + 3];
+
+            const A2323 = m22 * m33 - m23 * m32;
+            const A1323 = m21 * m33 - m23 * m31;
+            const A1223 = m21 * m32 - m22 * m31;
+            const A0323 = m20 * m33 - m23 * m30;
+            const A0223 = m20 * m32 - m22 * m30;
+            const A0123 = m20 * m31 - m21 * m30;
+            const A2313 = m12 * m33 - m13 * m32;
+            const A1313 = m11 * m33 - m13 * m31;
+            const A1213 = m11 * m32 - m12 * m31;
+            const A2312 = m12 * m23 - m13 * m22;
+            const A1312 = m11 * m23 - m13 * m21;
+            const A1212 = m11 * m22 - m12 * m21;
+            const A0313 = m10 * m33 - m13 * m30;
+            const A0213 = m10 * m32 - m12 * m30;
+            const A0312 = m10 * m23 - m13 * m20;
+            const A0212 = m10 * m22 - m12 * m20;
+            const A0113 = m10 * m31 - m11 * m30;
+            const A0112 = m10 * m21 - m11 * m20;
+
+            var det = m00 * (m11 * A2323 - m12 * A1323 + m13 * A1223) -
+                m01 * (m10 * A2323 - m12 * A0323 + m13 * A0223) +
+                m02 * (m10 * A1323 - m11 * A0323 + m13 * A0123) -
+                m03 * (m10 * A1223 - m11 * A0223 + m12 * A0123);
+            det = 1 / det;
+
+            return Self.init(.{
+                det * (m11 * A2323 - m12 * A1323 + m13 * A1223),
+                det * -(m01 * A2323 - m02 * A1323 + m03 * A1223),
+                det * (m01 * A2313 - m02 * A1313 + m03 * A1213),
+                det * -(m01 * A2312 - m02 * A1312 + m03 * A1212),
+                det * -(m10 * A2323 - m12 * A0323 + m13 * A0223),
+                det * (m00 * A2323 - m02 * A0323 + m03 * A0223),
+                det * -(m00 * A2313 - m02 * A0313 + m03 * A0213),
+                det * (m00 * A2312 - m02 * A0312 + m03 * A0212),
+                det * (m10 * A1323 - m11 * A0323 + m13 * A0123),
+                det * -(m00 * A1323 - m01 * A0323 + m03 * A0123),
+                det * (m00 * A1313 - m01 * A0313 + m03 * A0113),
+                det * -(m00 * A1312 - m01 * A0312 + m03 * A0112),
+                det * -(m10 * A1223 - m11 * A0223 + m12 * A0123),
+                det * (m00 * A1223 - m01 * A0223 + m02 * A0123),
+                det * -(m00 * A1213 - m01 * A0213 + m02 * A0113),
+                det * (m00 * A1212 - m01 * A0212 + m02 * A0112),
+            });
+        }
+
         // Vector specific accessors
         pub fn x(self: *const Self) T {
             if (comptime rows_ != 1) {
@@ -738,4 +806,20 @@ test "Vector Rotation" {
     std.debug.print("Actual: {f}\n", .{rotated});
 
     try std.testing.expect(rotated.eql(&expected));
+}
+
+test "Inverse Matrix" {
+    var eye_mat = Mat4f.eye();
+    const inv = eye_mat.inverse();
+
+    std.debug.print("Eye Mat: {f}\n", .{eye_mat});
+    std.debug.print("Inverse Mat: {f}\n", .{inv});
+
+    try std.testing.expect(eye_mat.eql(&inv));
+
+    var new_mat = Mat4f.init(.{ 1.0, 3.0, 5.0, 9.0, 1.0, 3.0, 1.0, 7.0, 4.0, 3.0, 9.0, 7.0, 5.0, 2.0, 0.0, 9.0 });
+    const new_inv = new_mat.inverse();
+
+    std.debug.print("New Mat: {f}\n", .{new_mat});
+    std.debug.print("New Inve Mat: {f}\n", .{new_inv});
 }

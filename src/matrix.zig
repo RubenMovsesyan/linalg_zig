@@ -576,12 +576,21 @@ pub fn Matrix(comptime T: type, comptime rows_: usize, comptime cols_: usize) ty
         //     );
         // }
 
+        // pub fn hamiltonProd(self: *const Self, vector: *const Vector(T, 4)) Vector(T, 4) {
+        //     return Vector(T, 4).init(.{
+        //         self.w() * vector.w() - self.x() * vector.x() - self.y() * vector.y() - self.z() * vector.z(),
+        //         self.w() * vector.x() + self.x() * vector.w() + self.y() * vector.z() - self.z() * vector.y(),
+        //         self.w() * vector.y() - self.x() * vector.z() + self.y() * vector.w() + self.z() * vector.x(),
+        //         self.w() * vector.z() + self.x() * vector.y() - self.y() * vector.x() + self.z() * vector.w(),
+        //     });
+        // }
+
         pub fn hamiltonProd(self: *const Self, vector: *const Vector(T, 4)) Vector(T, 4) {
             return Vector(T, 4).init(.{
-                self.w() * vector.w() - self.x() * vector.x() - self.y() * vector.y() - self.z() * vector.z(),
                 self.w() * vector.x() + self.x() * vector.w() + self.y() * vector.z() - self.z() * vector.y(),
                 self.w() * vector.y() - self.x() * vector.z() + self.y() * vector.w() + self.z() * vector.x(),
                 self.w() * vector.z() + self.x() * vector.y() - self.y() * vector.x() + self.z() * vector.w(),
+                self.w() * vector.w() - self.x() * vector.x() - self.y() * vector.y() - self.z() * vector.z(),
             });
         }
 
